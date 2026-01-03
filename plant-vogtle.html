@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Georgia Energy Cost Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-nuclear: #f59e0b;
+      --accent-gas: #3b82f6;
+      --accent-coal: #6b7280;
+      --accent-solar: #10b981;
+      --accent-wind: #06b6d4;
+      --accent-hydro: #8b5cf6;
+      --border: #334155;
+      --gradient-1: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Header Section */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-badge {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-nuclear);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-family: 'IBM Plex Serif', Georgia, serif;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 600;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header .subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Key Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .metric-context {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .metric-nuclear .metric-value { color: var(--accent-nuclear); }
+    .metric-gas .metric-value { color: var(--accent-gas); }
+    .metric-solar .metric-value { color: var(--accent-solar); }
+
+    /* Chart Section */
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-family: 'IBM Plex Serif', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* LCOE Comparison Chart */
+    .lcoe-chart {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      border: 1px solid var(--border);
+    }
+
+    .lcoe-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 80px;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+
+    .lcoe-row:last-child {
+      border-bottom: none;
+    }
+
+    .lcoe-label {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .lcoe-bar-container {
+      position: relative;
+      height: 28px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .lcoe-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease-out;
+    }
+
+    .lcoe-bar-range {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 4px;
+      opacity: 0.4;
+    }
+
+    .lcoe-bar.nuclear { background: var(--accent-nuclear); }
+    .lcoe-bar.gas { background: var(--accent-gas); }
+    .lcoe-bar.solar { background: var(--accent-solar); }
+    .lcoe-bar.wind { background: var(--accent-wind); }
+    .lcoe-bar.coal { background: var(--accent-coal); }
+
+    .lcoe-range-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .lcoe-value {
+      font-weight: 600;
+      font-size: 14px;
+      text-align: right;
+    }
+
+    /* Generation Mix */
+    .mix-chart {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .mix-chart {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mix-column {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .mix-year {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mix-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      gap: 12px;
+    }
+
+    .mix-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .mix-name {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .mix-percent {
+      font-weight: 600;
+      font-size: 14px;
+      min-width: 45px;
+      text-align: right;
+    }
+
+    .mix-bar-bg {
+      width: 100px;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .mix-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease-out;
+    }
+
+    /* Timeline */
+    .timeline {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 28px;
+      border: 1px solid var(--border);
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .timeline-row:last-child {
+      border-bottom: none;
+    }
+
+    .timeline-year {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--accent-nuclear);
+    }
+
+    .timeline-event {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .timeline-cost {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-nuclear);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    /* Key Takeaways */
+    .takeaways {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .takeaway-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent-nuclear);
+    }
+
+    .takeaway-card.pro {
+      border-left-color: var(--accent-solar);
+    }
+
+    .takeaway-card.con {
+      border-left-color: #ef4444;
+    }
+
+    .takeaway-card.neutral {
+      border-left-color: var(--accent-gas);
+    }
+
+    .takeaway-icon {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .takeaway-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .takeaway-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Source Note */
+    .source-note {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .source-note a {
+      color: var(--text-secondary);
+    }
+
+    /* Animation */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: slideIn 0.6s ease-out forwards;
+    }
+
+    .delay-1 { animation-delay: 0.1s; opacity: 0; }
+    .delay-2 { animation-delay: 0.2s; opacity: 0; }
+    .delay-3 { animation-delay: 0.3s; opacity: 0; }
+    .delay-4 { animation-delay: 0.4s; opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header animate-in">
+      <span class="header-badge">Research Analysis • December 2025</span>
+      <h1>Georgia Energy Cost Analysis</h1>
+      <p class="subtitle">Comparing Plant Vogtle nuclear expansion against alternative generation sources — with balanced assessment of competing economic claims</p>
+    </header>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid animate-in delay-1">
+      <div class="metric-card metric-nuclear">
+        <div class="metric-label">Vogtle 3&4 Final Cost</div>
+        <div class="metric-value">$31-35B</div>
+        <div class="metric-context">150%+ over original $14B estimate</div>
+      </div>
+      <div class="metric-card metric-gas">
+        <div class="metric-label">GA Retail Rate (2024)</div>
+        <div class="metric-value">14.53¢</div>
+        <div class="metric-context">19% below national average</div>
+      </div>
+      <div class="metric-card metric-solar">
+        <div class="metric-label">Vogtle Capacity Factor</div>
+        <div class="metric-value">>97%</div>
+        <div class="metric-context">Exceeds 91% fleet average</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Operating Life</div>
+        <div class="metric-value">60-80 yr</div>
+        <div class="metric-context">Licensed through ~2083-2103</div>
+      </div>
+    </div>
+
+    <!-- LCOE Comparison -->
+    <section class="section animate-in delay-2">
+      <h2 class="section-title">Levelized Cost of Energy (LCOE) Comparison</h2>
+      <div class="lcoe-chart">
+        <div class="lcoe-row">
+          <div class="lcoe-label">Vogtle 3&4</div>
+          <div class="lcoe-bar-container">
+            <div class="lcoe-bar-range nuclear" style="left: 63.6%; width: 36%"></div>
+            <div class="lcoe-bar nuclear" style="width: 99.6%"></div>
+          </div>
+          <div class="lcoe-value">$141-221</div>
+        </div>
+        <div class="lcoe-row">
+          <div class="lcoe-label">Natural Gas CC</div>
+          <div class="lcoe-bar-container">
+            <div class="lcoe-bar-range gas" style="left: 17.6%; width: 28%"></div>
+            <div class="lcoe-bar gas" style="width: 45.5%"></div>
+          </div>
+          <div class="lcoe-value">$39-101</div>
+        </div>
+        <div class="lcoe-row">
+          <div class="lcoe-label">Solar (utility)</div>
+          <div class="lcoe-bar-container">
+            <div class="lcoe-bar-range solar" style="left: 10.8%; width: 32.4%"></div>
+            <div class="lcoe-bar solar" style="width: 43.2%"></div>
+          </div>
+          <div class="lcoe-value">$24-96</div>
+        </div>
+        <div class="lcoe-row">
+          <div class="lcoe-label">Onshore Wind</div>
+          <div class="lcoe-bar-container">
+            <div class="lcoe-bar-range wind" style="left: 10.8%; width: 23%"></div>
+            <div class="lcoe-bar wind" style="width: 33.8%"></div>
+          </div>
+          <div class="lcoe-value">$24-75</div>
+        </div>
+        <div class="lcoe-row">
+          <div class="lcoe-label">Nuclear (deprec.)</div>
+          <div class="lcoe-bar-container">
+            <div class="lcoe-bar-range nuclear" style="left: 13.5%; width: 3.6%"></div>
+            <div class="lcoe-bar nuclear" style="width: 17.1%; opacity: 0.7"></div>
+          </div>
+          <div class="lcoe-value">$30-38</div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px; text-align: center;">
+          Sources: Lazard LCOE+ v17-18, EIA AEO 2025. Bars show range; nuclear depreciated = post-capital recovery costs.
+        </p>
+      </div>
+    </section>
+
+    <!-- Generation Mix Comparison -->
+    <section class="section animate-in delay-3">
+      <h2 class="section-title">Georgia Generation Mix: 2014 vs 2024</h2>
+      <div class="mix-chart">
+        <div class="mix-column">
+          <div class="mix-year">2014</div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-gas)"></div>
+            <span class="mix-name">Natural Gas</span>
+            <span class="mix-percent">35%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 35%; background: var(--accent-gas)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-coal)"></div>
+            <span class="mix-name">Coal</span>
+            <span class="mix-percent">33%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 33%; background: var(--accent-coal)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-nuclear)"></div>
+            <span class="mix-name">Nuclear</span>
+            <span class="mix-percent">25%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 25%; background: var(--accent-nuclear)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-hydro)"></div>
+            <span class="mix-name">Hydro/Other</span>
+            <span class="mix-percent">6%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 6%; background: var(--accent-hydro)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-solar)"></div>
+            <span class="mix-name">Solar</span>
+            <span class="mix-percent"><1%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 1%; background: var(--accent-solar)"></div></div>
+          </div>
+        </div>
+        <div class="mix-column">
+          <div class="mix-year">2024</div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-gas)"></div>
+            <span class="mix-name">Natural Gas</span>
+            <span class="mix-percent">41%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 41%; background: var(--accent-gas)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-nuclear)"></div>
+            <span class="mix-name">Nuclear</span>
+            <span class="mix-percent">34%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 34%; background: var(--accent-nuclear)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-coal)"></div>
+            <span class="mix-name">Coal</span>
+            <span class="mix-percent">13%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 13%; background: var(--accent-coal)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-solar)"></div>
+            <span class="mix-name">Solar</span>
+            <span class="mix-percent">7%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 7%; background: var(--accent-solar)"></div></div>
+          </div>
+          <div class="mix-row">
+            <div class="mix-color" style="background: var(--accent-hydro)"></div>
+            <span class="mix-name">Hydro/Biomass</span>
+            <span class="mix-percent">5%</span>
+            <div class="mix-bar-bg"><div class="mix-bar" style="width: 5%; background: var(--accent-hydro)"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vogtle Cost Timeline -->
+    <section class="section animate-in delay-3">
+      <h2 class="section-title">Vogtle 3&4 Cost Evolution</h2>
+      <div class="timeline">
+        <div class="timeline-row">
+          <div class="timeline-year">2009</div>
+          <div class="timeline-event">Construction begins; certified cost <span class="timeline-cost">$14B</span></div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-year">2017</div>
+          <div class="timeline-event">Westinghouse bankruptcy; PSC staff warns against continuation <span class="timeline-cost">$21B</span></div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-year">2018</div>
+          <div class="timeline-event">Southern Company takes over construction management <span class="timeline-cost">$25B</span></div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-year">2021</div>
+          <div class="timeline-event">Continued delays and cost increases <span class="timeline-cost">$28.5B</span></div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-year">2023</div>
+          <div class="timeline-event">Unit 3 enters commercial operation (July) <span class="timeline-cost">$34B</span></div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-year">2024</div>
+          <div class="timeline-event">Unit 4 enters commercial operation (April); total final cost <span class="timeline-cost">$31-35B</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Takeaways -->
+    <section class="section animate-in delay-4">
+      <h2 class="section-title">Balanced Assessment</h2>
+      <div class="takeaways">
+        <div class="takeaway-card con">
+          <div class="takeaway-icon">📉</div>
+          <div class="takeaway-title">Construction Economics</div>
+          <div class="takeaway-text">Vogtle 3&4 construction was objectively a cost management failure. At $14,000-16,000/kW, it ranks among the most expensive power plants ever built per unit capacity. PSC staff concluded natural gas alternatives would have been cheaper.</div>
+        </div>
+        <div class="takeaway-card pro">
+          <div class="takeaway-icon">⚡</div>
+          <div class="takeaway-title">Operational Performance</div>
+          <div class="takeaway-text">Both units are performing exceptionally well with >97% capacity factor vs. 91% fleet average. Unit 4 was built 30% more efficiently than Unit 3, demonstrating learning effects. The plants won POWER Magazine's 2024 Plant of the Year.</div>
+        </div>
+        <div class="takeaway-card neutral">
+          <div class="takeaway-icon">📊</div>
+          <div class="takeaway-title">Long-Term Value</div>
+          <div class="takeaway-text">After capital recovery (~2053), operating costs drop to $30-38/MWh—highly competitive. With 60-80 year life, 30-50 years of low-cost power could follow. However, this assumes no major technology disruption over that timeframe.</div>
+        </div>
+        <div class="takeaway-card">
+          <div class="takeaway-icon">⚖️</div>
+          <div class="takeaway-title">Bottom Line</div>
+          <div class="takeaway-text">Both critics and proponents can find evidence supporting their positions. The ultimate economic outcome depends on plant longevity, future fuel/carbon prices, and alternatives available over the 60-80 year operating life. The answer remains genuinely uncertain.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Source Note -->
+    <div class="source-note">
+      <p><strong>Sources:</strong> EIA Form 860/923, Georgia PSC Docket Filings, Lazard LCOE+ v16-18, Georgia Power IRP 2022/2023/2025, MIT CANES Research, World Nuclear Association</p>
+      <p style="margin-top: 8px;">Analysis prepared December 2025. LCOE figures are estimates with significant uncertainty ranges. This analysis attempts to present both pro-nuclear and anti-nuclear perspectives fairly.</p>
+    </div>
+  </div>
+</body>
+</html>
